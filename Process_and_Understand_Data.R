@@ -1,57 +1,85 @@
-# loading the packages:
-library(dplyr) # for pipes and the data_frame function
-library(rvest) # webscraping
-library(stringr) # to deal with strings and to clean up our data
-# extracting the whole website
-#google <- read_html("https://news.google.com/")
-google <- read_html("https://news.google.com/topics/CAAqJggKIiBDQkFTRWdvSUwyMHZNRGx6TVdZU0FtVnVHZ0pWVXlnQVAB/sections/CAQiXENCQVNQd29JTDIwdk1EbHpNV1lTQW1WdUdnSlZVeUlQQ0FRYUN3b0pMMjB2TURsNU5IQnRLaG9LR0FvVVRVRlNTMFZVVTE5VFJVTlVTVTlPWDA1QlRVVWdBU2dBKioIAComCAoiIENCQVNFZ29JTDIwdk1EbHpNV1lTQW1WdUdnSlZVeWdBUAFQAQ?hl=en-US&gl=US&ceid=US%3Aen")
+library(lattice)
+library(nutshell)
+data(births2006.smpl)
+births2006.smpl[1:5,]
 
-# extracting the com vehicles
-# we pass the nodes in html_nodes and extract the text from the last one 
-# we use stringr to delete strings that are not important
-vehicle_all <- google %>% 
-  html_nodes("div div div main c-wiz div div div article div div div") %>% 
-  html_text() %>%
-  str_subset("[^more_vert]") %>%
-  str_subset("[^share]") %>%
-  str_subset("[^bookmark_border]")
+dim(births2006.smpl)
 
-vehicle_all[1:10]
+births.dow=table(births2006.smpl$DOB_WK)
+births.dow
 
-time_all <- google %>% html_nodes("div article div div time") %>% html_text()
+barchart(births.dow,ylab="Day of Week", col="black")
 
-time_all[1:10]
+dob.dm.tbl=table(WK=births2006.smpl$DOB_WK,
+                 MM=births2006.smpl$DMETH_REC)
+dob.dm.tbl
 
+dob.dm.tbl=dob.dm.tbl[,-2]
+dob.dm.tbl
 
-# extracting the headlines
-# and using stringr for cleaning
-headline_all <- google %>% html_nodes("article") %>% html_text("span") %>%
-  str_split("(?<=[a-z0-9!?\\.])(?=[A-Z])")
-# str_split("(?<=[a-z0-9αινσϊ!?\\.])(?=[A-Z])") # for Google News in Portuguese
+trellis.device()
+barchart(dob.dm.tbl,ylab="Day of Week")
+barchart(dob.dm.tbl,horizontal=FALSE,groups=FALSE,
+xlab="Day of Week",col="black")
 
+histogram(~DBWT|DPLURAL,data=births2006.smpl,layout=c(1,5),
+col="black")
+histogram(~DBWT|DMETH_REC,data=births2006.smpl,layout=c(1,3),
+col="black")
 
+densityplot(~DBWT|DPLURAL,data=births2006.smpl,layout=c(1,5),
+plot.points=FALSE,col="black")
+densityplot(~DBWT,groups=DPLURAL,data=births2006.smpl,
+plot.points=FALSE)
 
+dotplot(~DBWT|DPLURAL,data=births2006.smpl,layout=c(1,5),
+plot.points=FALSE,col="black")
 
-headline_all <- sapply(headline_all, function(x) x[1]) # extract only the first elements
+xyplot(DBWT~DOB_WK,data=births2006.smpl,col="black")
+xyplot(DBWT~DOB_WK|DPLURAL,data=births2006.smpl,layout=c(1,5),
+col="black")
 
-headline_all[1:10] 
+xyplot(DBWT~WTGAIN,data=births2006.smpl,col="black")
+xyplot(DBWT~WTGAIN|DPLURAL,data=births2006.smpl,layout=c(1,5),
+col="black")
 
+smoothScatter(births2006.smpl$WTGAIN,births2006.smpl$DBWT)
 
-# finding the smallest vector
-min <- min(sapply(list(vehicle_all, time_all, headline_all), length))
+boxplot(DBWT~APGAR5,data=births2006.smpl,ylab="DBWT",
+xlab="AGPAR5")
 
-# cutting
-vehicle_all <- vehicle_all[1:min]
-time_all <- time_all[1:min]
-headline_all <- headline_all[1:min]
-#And we have our final data frame:
-  
-df_news <- data_frame(vehicle_all, time_all, headline_all)
+boxplot(DBWT~DOB_WK,data=births2006.smpl,ylab="DBWT",
+xlab="Day of Week")
 
-View(df_news)
+bwplot(DBWT~factor(APGAR5)|factor(SEX),data=births2006.smpl,
+xlab="AGPAR5")
 
+bwplot(DBWT~factor(DOB_WK),data=births2006.smpl,
+xlab="Day of Week")
 
+fac=factor(births2006.smpl$DPLURAL)
+res=births2006.smpl$DBWT
+t4=tapply(res,fac,mean,na.rm=TRUE)
+t4
 
+t5=tapply(births2006.smpl$DBWT,INDEX=list(births2006.smpl$DPLURAL,
+births2006.smpl$SEX),FUN=mean,na.rm=TRUE)
+t5
 
+barplot(t4,ylab="DBWT")
+barplot
 
+t5=table(births2006.smpl$ESTGEST)
+t5
+
+new=births2006.smpl[births2006.smpl$ESTGEST != 99,]
+t51=table(new$ESTGEST)
+t51
+
+t6=tapply(new$DBWT,INDEX=list(cut(new$WTGAIN,breaks=10),
+cut(new$ESTGEST,breaks=10)),FUN=mean,na.rm=TRUE)
+t6
+levelplot(t6,scales = list(x = list(rot = 90)))
+
+contourplot(t6,scales = list(x = list(rot = 90)))
 
